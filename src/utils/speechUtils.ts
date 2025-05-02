@@ -1,7 +1,7 @@
 
 // Speech synthesis utility functions
 let audioContext: AudioContext | null = null;
-let backgroundMusicSource: MediaElementAudioNode | null = null;
+let backgroundMusicSource: MediaElementAudioSourceNode | null = null;
 let backgroundMusicElement: HTMLAudioElement | null = null;
 
 // Initialize speech synthesis
@@ -62,12 +62,25 @@ export const toggleBackgroundMusic = (isPlaying: boolean, musicPath: string): bo
       backgroundMusicElement = new Audio(musicPath);
       backgroundMusicElement.loop = true;
       backgroundMusicElement.volume = 0.3;
+      
+      // Add error handling for audio loading
+      backgroundMusicElement.onerror = (e) => {
+        console.error("Error loading audio:", e);
+      };
     }
     
     if (audioContext && backgroundMusicElement) {
-      backgroundMusicElement.play().catch(err => console.error("Error playing music:", err));
-      backgroundMusicSource = audioContext.createMediaElementSource(backgroundMusicElement);
-      backgroundMusicSource.connect(audioContext.destination);
+      backgroundMusicElement.play()
+        .then(() => {
+          if (audioContext) {
+            backgroundMusicSource = audioContext.createMediaElementSource(backgroundMusicElement!);
+            backgroundMusicSource.connect(audioContext.destination);
+          }
+        })
+        .catch(err => {
+          console.error("Error playing music:", err);
+          return false;
+        });
       return true;
     }
     
